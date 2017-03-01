@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+	<meta charset="utf-8"/>
+	<title>Inti's Voice Video Search</title>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<link rel="stylesheet" type="text/css" href="css/jquery.fancybox.css">
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.6.1/css/font-awesome.min.css" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+	<script src="js/jquery.fancybox.pack.js"></script>
+	<script src="js/script.js"></script>
+	<script>
+		$(document).ready(function(){
+			$('.fancybox').fancybox();
+		});
+	</script>
+	<style type="text/css">
+			body{
+				font-family: verdana;
+			}
+			#result{
+				height: 70px;
+				border: 1px solid #ccc;
+				padding: 25px;
+				box-shadow: 0 0 10px 0 #bbb;
+				margin-bottom: 30px;
+				font-size: 30px;
+				line-height: 25px;
+			}
+			button{
+				font-size: 20px;
+				position: absolute;
+				top: 240px;
+				left: 70%;
+			}
+			.next { display: none;
+			}
+		</style>
+</head>
+
+<body>
+	<div id="container">
+		<header>
+			<center>
+				<h1><align="center"><span>Inti's Voice Search YouTube</span></align></h1>
+				<p>Click the microphone icon for new search :) </p>
+			</center>
+		</header>
+		<section>
+			<div align="center" width="70%">
+				
+
+
+				<form id="search_form" name="search_form" onsubmit="return search()">
+				<div class="fieldContainer">
+					
+				<!--	<input type="search" id="query" class="search-field" placeholder="" width="0px"> -->
+					<input type="submit" name="search-btn" id="search-btn" value="" style="display: none">
+				</div>
+			</form>
+			<button onclick="startConverting();" class="button_">
+					<i class="fa fa-microphone" style="font-size: -webkit-xxx-large;"></i>
+			</button>
+			</div>
+
+			<div id="result" type="search" id="query" class="search-field result" placeholder=".."></div>
+			
+			
+
+			<script type="text/javascript">
+				var r = document.getElementById('result');
+
+				function startConverting () {
+					if('webkitSpeechRecognition' in window){
+						var speechRecognizer = new webkitSpeechRecognition();
+						speechRecognizer.continuous = true;
+						speechRecognizer.interimResults = true;
+						speechRecognizer.lang = 'en-IN';
+						speechRecognizer.start();
+
+						var finalTranscripts = '';
+
+						speechRecognizer.onresult = function(event){
+							var interimTranscripts = '';
+							for(var i = event.resultIndex; i < event.results.length; i++){
+								var transcript = event.results[i][0].transcript;
+								transcript.replace("\n", "<br>");
+								if(event.results[i].isFinal){
+									finalTranscripts += transcript;
+								}else{
+									interimTranscripts += transcript;
+								}
+							}
+							//r.innerHTML = finalTranscripts + '<span style="color:#999">' + interimTranscripts + '</span>';
+							r.innerHTML = finalTranscripts + interimTranscripts;
+							var qu = r.innerHTML
+							console.log(qu)
+
+
+								$('#results').html('');
+								//$('#buttons').html('');
+	
+								//get form input
+								//q = $('#query').val();
+								q = $('.result')[0].innerHTML;
+
+								//run get request on API
+								$.get(
+									"https://www.googleapis.com/youtube/v3/search", {
+										part: 'snippet, id',
+										q: q, 
+										type: 'video', 
+										key: 'AIzaSyC61rwdV4Tyy9ChypmQfTODXznQXZfFvl4'},
+										function(data){
+											var nextPageToken = data.nextPageToken;
+											var prevPageToken = data.prevPageToken;
+											console.log(data);
+											
+											$.each(data.items, function(i, item){
+												// Get Output
+												var output = getOutput(item);
+												
+												// Display Results
+												$('#results').append(output);
+
+											});
+
+											var buttons = getButtons(prevPageToken, nextPageToken);
+												//display buttons
+												$('#buttons').append(buttons);
+
+								
+											var delayMillis = 4000; //1 second
+
+											setTimeout(function() {
+											  //your code to be executed after 1 second
+											  speechRecognizer.stop();
+											}, delayMillis);
+											
+										}
+
+								);
+
+						};
+						speechRecognizer.onerror = function (event) {
+						};
+					}else{
+						r.innerHTML = 'Your browser is not supported. If google chrome, please upgrade!';
+					}
+					
+				}
+
+
+	$(function(){
+	var searchField = $('#query');
+	var icon = $('#result');
+
+	//focus event handler
+	$(searchField).on('focus', function(){
+		$(this).animate({
+			width: '100%'
+		}, 400);
+		$(icon).animate({
+			right: '10px'
+		}, 400);
+	});
+
+	$(searchField).on('blur', function(){
+		if(searchField.val() == ''){
+			$(searchField).animate({
+				width: '45%'
+			}, 400, function(){});
+			$(icon).animate({
+				right: '360px'
+			}, 400, function(){});
+		}
+	});
+
+	$('#search_form').submit(function(event){
+		event.preventDefault();
+	});
+})
+
+/*
+function search(){
+	//clear results
+	$('#results').html('');
+	$('#buttons').html('');
+	
+	//get form input
+	//q = $('#query').val();
+	q = $('.result')[0].innerHTML;
+
+	//run get request on API
+	$.get(
+		"https://www.googleapis.com/youtube/v3/search", {
+			part: 'snippet, id',
+			q: q, 
+			type: 'video', 
+			key: 'AIzaSyC61rwdV4Tyy9ChypmQfTODXznQXZfFvl4'},
+			function(data){
+				var nextPageToken = data.nextPageToken;
+				var prevPageToken = data.prevPageToken;
+				console.log(data);
+				
+				$.each(data.items, function(i, item){
+					// Get Output
+					var output = getOutput(item);
+					
+					// Display Results
+					$('#results').append(output);
+				});
+
+				var buttons = getButtons(prevPageToken, nextPageToken);
+					//display buttons
+					$('#buttons').append(buttons);
+			}
+	);
+
+}
+*/			
+			</script>
+		</section>
+
+		<section>
+		
+			
+			<ul id="results"></ul>
+			<div id="buttons" class="next"></div>
+		</section>
+		
+			
+		<footer>
+			<p>Copyright &copy; 2016 All Rights Reserved</p>
+		</footer>
+	</div>
+</body>
+</html>
